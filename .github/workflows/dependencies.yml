@@ -25,7 +25,6 @@ env:
 
 jobs:
   not-waiting-on-bors:
-    if: github.repository_owner == 'rust-lang'
     name: skip if S-waiting-on-bors
     runs-on: ubuntu-24.04
     steps:
@@ -44,7 +43,6 @@ jobs:
           fi
 
   update:
-    if: github.repository_owner == 'rust-lang'
     name: update dependencies
     needs: not-waiting-on-bors
     runs-on: ubuntu-24.04
@@ -91,7 +89,6 @@ jobs:
           retention-days: 1
 
   pr:
-    if: github.repository_owner == 'rust-lang'
     name: amend PR
     needs: update
     runs-on: ubuntu-24.04
