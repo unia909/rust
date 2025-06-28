@@ -1,0 +1,68 @@
+name: Windows Build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-windows:
+    name: Build for Windows
+    runs-on: windows-latest
+    timeout-minutes: 360
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Install dependencies
+      shell: pwsh
+      run: |
+        # Установка необходимых компонентов
+        choco install -y python --version=3.11.0
+        choco install -y cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+        choco install -y ninja
+        refreshenv
+        
+        # Установка MSVC (через VS Build Tools)
+        Invoke-WebRequest -Uri "https://aka.ms/vs/17/release/vs_BuildTools.exe" -OutFile "$env:TEMP\vs_BuildTools.exe"
+        Start-Process -Wait -FilePath "$env:TEMP\vs_BuildTools.exe" -ArgumentList @(
+          '--add', 'Microsoft.VisualStudio.Workload.VCTools',
+          '--add', 'Microsoft.VisualStudio.Component.VC.Tools.x86.x64',
+          '--add', 'Microsoft.VisualStudio.Component.Windows11SDK.22621',
+          '--quiet', '--norestart', '--nocache'
+        )
+        
+        # Добавление MSVC в PATH
+        $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+        $vcvarsPath = Join-Path $vsPath "VC\Auxiliary\Build\vcvars64.bat"
+        cmd /c "call `"$vcvarsPath`" && set > %temp%\vcvars.txt"
+        Get-Content "$env:TEMP\vcvars.txt" | ForEach-Object {
+          if ($_ -match "^(.*?)=(.*)$") {
+            [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2])
+          }
+        }
+
+    - name: Configure
+      shell: cmd
+      run: |
+        python configure.py
+          --set target.x86_64-pc-windows-msvc.default-linker=lld-link
+          --set llvm.download-ci-llvm=true
+          --set build.extended=true
+
+    - name: Build (Stage 1)
+      shell: cmd
+      run: |
+        python x.py build --stage 1 library/std
+
+    - name: Package
+      shell: cmd
+      run: |
+        python x.py dist --stage 1
