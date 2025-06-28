@@ -2962,11 +2962,6 @@ impl Target {
             "`is_like_solaris` must be set if and only if `os` is `solaris` or `illumos`"
         );
         check_eq!(
-            self.is_like_windows,
-            self.os == "windows" || self.os == "uefi" || self.os == "cygwin",
-            "`is_like_windows` must be set if and only if `os` is `windows`, `uefi` or `cygwin`"
-        );
-        check_eq!(
             self.is_like_wasm,
             self.arch == "wasm32" || self.arch == "wasm64",
             "`is_like_wasm` must be set if and only if `arch` is `wasm32` or `wasm64`"
