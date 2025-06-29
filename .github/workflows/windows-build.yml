@@ -60,7 +60,7 @@ jobs:
       shell: cmd
       run: |
         echo [llvm] > config.toml
-        echo download-ci-llvm = true >> config.toml
+        echo download-ci-llvm = "if-unchanged" >> config.toml
         echo. >> config.toml
         echo [build] >> config.toml
         echo extended = true >> config.toml
