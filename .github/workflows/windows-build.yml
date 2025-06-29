@@ -66,3 +66,12 @@ jobs:
       shell: cmd
       run: |
         python x.py dist --stage 1
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: rust-build
+        path: |
+          build/x86_64-pc-windows-msvc/stage1/
+          build/x86_64-pc-windows-msvc/stage0-tools-bin/
+        retention-days: 1  # Храним артефакты 1 день (можно увеличить)
