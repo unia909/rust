@@ -37,3 +37,13 @@ jobs:
     - name: Build
       run: |
         python3 x.py build --stage 1
+
+    - name: Upload artifacts
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: rust-build
+        path: |
+          build/x86_64-pc-windows-msvc/stage1/
+          build/x86_64-pc-windows-msvc/stage0-tools-bin/
+        retention-days: 1
