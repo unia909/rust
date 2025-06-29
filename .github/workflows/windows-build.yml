@@ -23,20 +23,34 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install MSVC
-      uses: ilammy/msvc-dev-cmd@v1
-      with:
-        arch: x64
-        toolset: latest
-        sdk: latest
+    - name: Install Visual Studio Build Tools
+      shell: pwsh
+      run: |
+        # Скачиваем и устанавливаем Build Tools
+        $vsSetupUrl = "https://aka.ms/vs/17/release/vs_BuildTools.exe"
+        $vsSetupPath = "$env:TEMP\vs_BuildTools.exe"
+        Invoke-WebRequest -Uri $vsSetupUrl -OutFile $vsSetupPath
+        
+        Start-Process -Wait -FilePath $vsSetupPath -ArgumentList @(
+          '--add', 'Microsoft.VisualStudio.Workload.VCTools',
+          '--add', 'Microsoft.VisualStudio.Component.VC.Tools.x86.x64',
+          '--add', 'Microsoft.VisualStudio.Component.Windows11SDK.22621',
+          '--quiet', '--norestart', '--nocache'
+        )
 
-    - name: Install prerequisites
+    - name: Setup MSVC Environment
+      shell: cmd
+      run: |
+        call "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+        set >> "%GITHUB_ENV%"
+
+    - name: Install other prerequisites
       shell: pwsh
       run: |
         choco install -y cmake ninja
         refreshenv
 
-    - name: Create config.toml
+    - name: Configure Rust
       shell: cmd
       run: |
         echo [llvm] > config.toml
@@ -48,7 +62,7 @@ jobs:
         echo [target.x86_64-pc-windows-msvc] >> config.toml
         echo default-linker = "lld-link" >> config.toml
 
-    - name: Build Rust (Stage 1)
+    - name: Build Rust
       shell: cmd
       run: |
         python x.py build --stage 1 library/std
