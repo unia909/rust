@@ -38,17 +38,23 @@ jobs:
           '--quiet', '--norestart', '--nocache'
         )
 
+    - name: Install build tools
+      shell: pwsh
+      run: |
+        Set-ExecutionPolicy Bypass -Scope Process -Force
+        [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+        iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+        choco install -y cmake ninja
+
+        Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1"
+        refreshenv
+
     - name: Setup MSVC Environment
       shell: cmd
       run: |
         call "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
         set >> "%GITHUB_ENV%"
-
-    - name: Install other prerequisites
-      shell: pwsh
-      run: |
-        choco install -y cmake ninja
-        refreshenv
 
     - name: Configure Rust
       shell: cmd
