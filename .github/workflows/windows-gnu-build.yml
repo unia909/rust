@@ -23,15 +23,28 @@ jobs:
       with:
         python-version: '3.11'
 
-    - name: Install MinGW-w64 (Optimized)
+    - name: Install MinGW-w64
       shell: pwsh
       run: |
-        choco install -y mingw --params "/InstallDir:C:\mingw /Threads:posix /Exception:seh /Version:12.2.0"
-        $env:PATH = "C:\mingw\bin;C:\mingw\x86_64-w64-mingw32\bin;$env:PATH"
-
-        Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1" -Force
+        $url = "https://github.com/niXman/mingw-builds-binaries/releases/download/12.2.0-rt_v10-rev2/x86_64-12.2.0-release-posix-seh-msvcrt-rt_v10-rev2.7z"
+        Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\mingw64.7z"
+        
+        7z x "$env:TEMP\mingw64.7z" -oC:\ -y
+        echo "C:\mingw64\bin" >> $env:GITHUB_PATH
         refreshenv
 
+    - name: Verify MinGW installation
+      shell: cmd
+      run: |
+        where x86_64-w64-mingw32-gcc
+        where x86_64-w64-mingw32-ar
+        where x86_64-w64-mingw32-g++
+        where gcc
+        where ar
+
+    - name: Install build tools
+      shell: pwsh
+      run: |
         choco install -y cmake ninja
         refreshenv
 
