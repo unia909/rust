@@ -59,27 +59,38 @@ jobs:
         call "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
         set >> "%GITHUB_ENV%"
 
-    - name: Configure Rust
+    - name: Configure Release Build
       shell: cmd
       run: |
         echo [llvm] > config.toml
         echo download-ci-llvm = false >> config.toml
         echo. >> config.toml
+        echo [rust] >> config.toml
+        echo codegen-units = 1 >> config.toml
+        echo debug = false >> config.toml
+        echo. >> config.toml
         echo [build] >> config.toml
         echo extended = true >> config.toml
+        echo release = true >> config.toml
         echo. >> config.toml
         echo [target.x86_64-pc-windows-msvc] >> config.toml
         echo default-linker = "lld-link" >> config.toml
+        echo linker-flavor = "lld" >> config.toml
 
-    - name: Build Rust
+    - name: Build Release (Stage 2)
       shell: cmd
       run: |
-        python x.py build --stage 1 library/std
+        python x.py build --stage 2
 
-    - name: Upload artifacts
+    - name: Package Release Dist
+      shell: cmd
+      run: |
+        python x.py dist --stage 2 --target x86_64-pc-windows-msvc
+
+    - name: Upload Release Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: rust-build
+        name: rust-release
         path: |
-          build\x86_64-pc-windows-msvc\stage1\
-          build\x86_64-pc-windows-msvc\stage0-tools-bin\
+          build\x86_64-pc-windows-msvc\stage2\
+          build\x86_64-pc-windows-msvc\dist\
