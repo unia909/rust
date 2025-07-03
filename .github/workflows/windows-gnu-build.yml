@@ -1,9 +1,15 @@
-name: Windows GNU Build
+name: Build Rust Compiler (Windows GNU x86-64)
 
 on:
   push:
-    branches: [master]
-  workflow_dispatch:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  TARGET: x86_64-pc-windows-gnu
+  RUST_BACKTRACE: 1
+  MSYS2_PATH: C:\msys64\usr\bin
 
 jobs:
   build:
@@ -27,26 +33,24 @@ jobs:
       run: |
         choco install -y msys2 --params="/NoUpdate"
         refreshenv
-        C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syu"
-        C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-toolchain make cmake"
+        $env:Path += ";$env:MSYS2_PATH"
+        bash -lc "pacman --noconfirm -Syu"
+        bash -lc "pacman --noconfirm -S mingw-w64-x86_64-toolchain make cmake"
 
     - name: Configure
-      shell: C:\msys64\usr\bin\bash.exe -l {0}
       run: |
-        ./configure \
-          --target=$TARGET \
+        bash -lc "./configure \
+          --target=$env:TARGET \
           --enable-extended \
-          --tools=rust-analyzer
+          --tools=rust-analyzer"
 
     - name: Build
-      shell: C:\msys64\usr\bin\bash.exe -l {0}
       run: |
-        make -j$(nproc)
+        bash -lc "make -j$(nproc)"
 
     - name: Package artifacts
-      shell: C:\msys64\usr\bin\bash.exe -l {0}
       run: |
-        make dist
+        bash -lc "make dist"
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v3
