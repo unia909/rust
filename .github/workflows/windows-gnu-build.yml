@@ -7,94 +7,49 @@ on:
 
 jobs:
   build:
-    name: Release Build (GNU)
+    name: Build Rust Compiler
     runs-on: windows-latest
-    timeout-minutes: 420
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@v3
       with:
         submodules: recursive
-        fetch-depth: 0
 
-    - name: Setup Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-
-    - name: Install MinGW-w64
-      shell: pwsh
+    - name: Install required tools
       run: |
-        $url = "https://github.com/niXman/mingw-builds-binaries/releases/download/12.2.0-rt_v10-rev2/x86_64-12.2.0-release-posix-seh-msvcrt-rt_v10-rev2.7z"
-        Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\mingw64.7z"
-        
-        7z x "$env:TEMP\mingw64.7z" -oC:\ -y
-        echo "C:\mingw64\bin" >> $env:GITHUB_PATH
-        Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
+        choco install -y python3
+        python -m pip install --upgrade pip
+        pip install ninja
         refreshenv
 
-    - name: Verify MinGW installation
-      shell: cmd
+    - name: Set up MSYS2
       run: |
-        where x86_64-w64-mingw32-gcc
-        where x86_64-w64-mingw32-ar
-        where x86_64-w64-mingw32-g++
-        where gcc
-        where ar
-
-    - name: Install build tools
-      shell: pwsh
-      run: |
-        choco install -y cmake ninja
-        Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
+        choco install -y msys2 --params="/NoUpdate"
         refreshenv
+        C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syu"
+        C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-toolchain make cmake"
 
-    - name: Configure Release Build
-      shell: bash
+    - name: Configure
+      shell: C:\msys64\usr\bin\bash.exe -l {0}
       run: |
-        cat > config.toml <<EOF
-        [llvm]
-        download-ci-llvm = false
-        assertions = false
-        optimize = true
-        
-        [rust]
-        debug = false
-        codegen-units = 1
-        lto = "thin"
-        incremental = false
-        
-        [build]
-        target = ["x86_64-pc-windows-gnu"]
-        host = ["x86_64-pc-windows-gnu"]
-        extended = true
-        tools = ["cargo", "rustfmt"]
-        
-        [target.x86_64-pc-windows-gnu]
-        cc = "x86_64-w64-mingw32-gcc"
-        cxx = "x86_64-w64-mingw32-g++"
-        linker = "x86_64-w64-mingw32-gcc"
-        ar = "x86_64-w64-mingw32-ar"
-        EOF
+        ./configure \
+          --target=$TARGET \
+          --enable-extended \
+          --tools=rust-analyzer
 
-    - name: Build Stage 2 (Optimized)
-      shell: bash
+    - name: Build
+      shell: C:\msys64\usr\bin\bash.exe -l {0}
       run: |
-        python x.py build --stage 2
+        make -j$(nproc)
 
-        python x.py build --stage 2 library/std --target x86_64-pc-windows-gnu
-
-    - name: Package Release Distribution
-      shell: bash
+    - name: Package artifacts
+      shell: C:\msys64\usr\bin\bash.exe -l {0}
       run: |
-        python x.py dist --stage 2 --target x86_64-pc-windows-gnu
+        make dist
 
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v4
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
       with:
-        name: rust-gnu-release
-        path: |
-          build/x86_64-pc-windows-gnu/stage2/
-          build/x86_64-pc-windows-gnu/dist/
-        retention-days: 3
+        name: rustc-${{ env.TARGET }}
+        path: ${{ github.workspace }}/build/dist/*.tar.xz
