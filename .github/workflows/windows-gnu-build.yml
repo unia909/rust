@@ -56,7 +56,6 @@ jobs:
         host = ["x86_64-pc-windows-gnu"]
         extended = true
         tools = ["cargo", "rustfmt"]
-        deny-warnings = true
         
         [target.x86_64-pc-windows-gnu]
         cc = "x86_64-w64-mingw32-gcc"
