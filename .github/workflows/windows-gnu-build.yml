@@ -3,14 +3,13 @@ name: Windows GNU Build
 on:
   push:
     branches: [master]
-  pull_request:
-    branches: [master]
+  workflow_dispatch:
 
 jobs:
   build:
-    name: Build Rust (x86_64-pc-windows-gnu)
+    name: Release Build (GNU)
     runs-on: windows-latest
-    timeout-minutes: 360  # 6 часов максимально
+    timeout-minutes: 420
 
     steps:
     - name: Checkout repository
@@ -19,62 +18,70 @@ jobs:
         submodules: recursive
         fetch-depth: 0
 
-    - name: Set up Python
+    - name: Setup Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
 
-    - name: Install MSYS2 and MinGW-w64
+    - name: Install MinGW-w64 (Optimized)
       shell: pwsh
       run: |
-        # Установка MSYS2
-        Invoke-WebRequest -Uri "https://github.com/msys2/msys2-installer/releases/download/2023-03-18/msys2-x86_64.exe" -OutFile "msys2.exe"
-        Start-Process -Wait -FilePath ".\msys2.exe" -ArgumentList 'install --root C:/msys64 --confirm-command'
-        
-        # Установка MinGW-w64 через pacman
-        $env:CHERE_INVOKING = "1"
-        $env:MSYSTEM = "MINGW64"
-        C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syu"
-        C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja"
+        choco install -y mingw --params "/InstallDir:C:\mingw /Threads:posix /Exception:seh /Version:12.2.0"
+        $env:PATH = "C:\mingw\bin;$env:PATH"
 
-        # Добавляем MinGW в PATH
-        $env:PATH = "C:\msys64\mingw64\bin;$env:PATH"
-        echo "C:\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+        choco install -y cmake ninja
+        refreshenv
 
-    - name: Verify MinGW installation
-      shell: pwsh
-      run: |
         gcc --version
         g++ --version
-        ld --version
+        cmake --version
 
-    - name: Configure Rust for GNU target
+    - name: Configure Release Build
       shell: bash
       run: |
         cat > config.toml <<EOF
         [llvm]
         download-ci-llvm = false
+        assertions = false
+        optimize = true
+        
+        [rust]
+        debug = false
+        codegen-units = 1
+        lto = "thin"
+        incremental = false
         
         [build]
         target = ["x86_64-pc-windows-gnu"]
         host = ["x86_64-pc-windows-gnu"]
         extended = true
+        tools = ["cargo", "rustfmt"]
+        deny-warnings = true
         
         [target.x86_64-pc-windows-gnu]
         cc = "x86_64-w64-mingw32-gcc"
         cxx = "x86_64-w64-mingw32-g++"
         linker = "x86_64-w64-mingw32-gcc"
+        ar = "x86_64-w64-mingw32-ar"
         EOF
 
-    - name: Build Rust (Stage 1)
+    - name: Build Stage 2 (Optimized)
       shell: bash
       run: |
-        python x.py build --stage 1
+        python x.py build --stage 2
 
-    - name: Upload artifacts
+        python x.py build --stage 2 library/std --target x86_64-pc-windows-gnu
+
+    - name: Package Release Distribution
+      shell: bash
+      run: |
+        python x.py dist --stage 2 --target x86_64-pc-windows-gnu
+
+    - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: rust-gnu-build
+        name: rust-gnu-release
         path: |
-          build/x86_64-pc-windows-gnu/stage1/
-          build/x86_64-pc-windows-gnu/stage0-tools-bin/
+          build/x86_64-pc-windows-gnu/stage2/
+          build/x86_64-pc-windows-gnu/dist/
+        retention-days: 3
