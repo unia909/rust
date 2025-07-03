@@ -1,0 +1,80 @@
+name: Windows GNU Build
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    name: Build Rust (x86_64-pc-windows-gnu)
+    runs-on: windows-latest
+    timeout-minutes: 360  # 6 часов максимально
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install MSYS2 and MinGW-w64
+      shell: pwsh
+      run: |
+        # Установка MSYS2
+        Invoke-WebRequest -Uri "https://github.com/msys2/msys2-installer/releases/download/2023-03-18/msys2-x86_64.exe" -OutFile "msys2.exe"
+        Start-Process -Wait -FilePath ".\msys2.exe" -ArgumentList 'install --root C:/msys64 --confirm-command'
+        
+        # Установка MinGW-w64 через pacman
+        $env:CHERE_INVOKING = "1"
+        $env:MSYSTEM = "MINGW64"
+        C:\msys64\usr\bin\bash -lc "pacman --noconfirm -Syu"
+        C:\msys64\usr\bin\bash -lc "pacman --noconfirm -S mingw-w64-x86_64-toolchain mingw-w64-x86_64-cmake mingw-w64-x86_64-ninja"
+
+        # Добавляем MinGW в PATH
+        $env:PATH = "C:\msys64\mingw64\bin;$env:PATH"
+        echo "C:\msys64\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Append
+
+    - name: Verify MinGW installation
+      shell: pwsh
+      run: |
+        gcc --version
+        g++ --version
+        ld --version
+
+    - name: Configure Rust for GNU target
+      shell: bash
+      run: |
+        cat > config.toml <<EOF
+        [llvm]
+        download-ci-llvm = false
+        
+        [build]
+        target = ["x86_64-pc-windows-gnu"]
+        host = ["x86_64-pc-windows-gnu"]
+        extended = true
+        
+        [target.x86_64-pc-windows-gnu]
+        cc = "x86_64-w64-mingw32-gcc"
+        cxx = "x86_64-w64-mingw32-g++"
+        linker = "x86_64-w64-mingw32-gcc"
+        EOF
+
+    - name: Build Rust (Stage 1)
+      shell: bash
+      run: |
+        python x.py build --stage 1
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: rust-gnu-build
+        path: |
+          build/x86_64-pc-windows-gnu/stage1/
+          build/x86_64-pc-windows-gnu/stage0-tools-bin/
