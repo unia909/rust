@@ -29,6 +29,9 @@ jobs:
         choco install -y mingw --params "/InstallDir:C:\mingw /Threads:posix /Exception:seh /Version:12.2.0"
         $env:PATH = "C:\mingw\bin;C:\mingw\x86_64-w64-mingw32\bin;$env:PATH"
 
+        Import-Module "$env:ChocolateyInstall\helpers\chocolateyProfile.psm1" -Force
+        refreshenv
+
         choco install -y cmake ninja
         refreshenv
 
