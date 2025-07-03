@@ -31,7 +31,6 @@ jobs:
         
         7z x "$env:TEMP\mingw64.7z" -oC:\ -y
         echo "C:\mingw64\bin" >> $env:GITHUB_PATH
-        Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
         refreshenv
 
     - name: Verify MinGW installation
@@ -47,6 +46,7 @@ jobs:
       shell: pwsh
       run: |
         choco install -y cmake ninja
+        Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
         refreshenv
 
     - name: Configure Release Build
