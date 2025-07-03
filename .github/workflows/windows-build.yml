@@ -27,7 +27,6 @@ jobs:
     - name: Install Visual Studio Build Tools
       shell: pwsh
       run: |
-        # Скачиваем и устанавливаем Build Tools
         $vsSetupUrl = "https://aka.ms/vs/17/release/vs_BuildTools.exe"
         $vsSetupPath = "$env:TEMP\vs_BuildTools.exe"
         Invoke-WebRequest -Uri $vsSetupUrl -OutFile $vsSetupPath
@@ -71,7 +70,6 @@ jobs:
         echo. >> config.toml
         echo [build] >> config.toml
         echo extended = true >> config.toml
-        echo release = true >> config.toml
         echo. >> config.toml
         echo [target.x86_64-pc-windows-msvc] >> config.toml
         echo default-linker = "lld-link" >> config.toml
