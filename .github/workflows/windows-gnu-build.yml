@@ -53,7 +53,7 @@ jobs:
         bash -lc "make dist"
 
     - name: Upload artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: rustc-${{ env.TARGET }}
         path: ${{ github.workspace }}/build/dist/*.tar.xz
