@@ -73,7 +73,6 @@ jobs:
         echo. >> config.toml
         echo [target.x86_64-pc-windows-msvc] >> config.toml
         echo default-linker = "lld-link" >> config.toml
-        echo linker-flavor = "lld" >> config.toml
 
     - name: Build Release (Stage 2)
       shell: cmd
