@@ -40,12 +40,6 @@ jobs:
         bash -lc "pacman --noconfirm -Syu"
         bash -lc "pacman --noconfirm -S mingw-w64-x86_64-toolchain make cmake"
 
-    - name: Configure environment
-      run: |
-        echo "CC=x86_64-w64-mingw32-gcc" >> $env:GITHUB_ENV
-        echo "CXX=x86_64-w64-mingw32-g++" >> $env:GITHUB_ENV
-        echo "AR=x86_64-w64-mingw32-ar" >> $env:GITHUB_ENV
-
     - name: Configure
       run: |
         bash -lc "./configure \
@@ -56,6 +50,7 @@ jobs:
 
     - name: Build
       run: |
+        set CXXFLAGS=-std=c++17
         bash -lc "make -j$(nproc)"
 
     - name: Package artifacts
