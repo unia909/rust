@@ -46,8 +46,7 @@ jobs:
           --target=$env:TARGET \
           --host=$env:HOST \
           --enable-extended \
-          --tools=rust-analyzer
-          --set rust.channel=nightly"
+          --tools=rust-analyzer"
 
     - name: Build
       run: |
