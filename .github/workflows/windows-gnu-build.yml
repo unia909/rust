@@ -9,6 +9,7 @@ on:
 env:
   TARGET: x86_64-pc-windows-gnu
   HOST: x86_64-pc-windows-gnu
+  RUST_BOOTSTRAP: 1
 
 jobs:
   build:
