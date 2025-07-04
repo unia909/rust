@@ -8,6 +8,7 @@ on:
 
 env:
   TARGET: x86_64-pc-windows-gnu
+  HOST: x86_64-pc-windows-gnu
 
 jobs:
   build:
