@@ -8,6 +8,7 @@ on:
 
 env:
   TARGET: x86_64-pc-windows-gnu
+  HOST: x86_64-pc-windows-gnu
   RUST_BACKTRACE: 1
   MSYS2_PATH: C:\msys64\usr\bin
 
@@ -43,8 +44,10 @@ jobs:
       run: |
         bash -lc "./configure \
           --target=$env:TARGET \
+          --host=$env:HOST \
           --enable-extended \
-          --tools=rust-analyzer"
+          --tools=rust-analyzer
+          --set rust.channel=nightly"
 
     - name: Build
       run: |
