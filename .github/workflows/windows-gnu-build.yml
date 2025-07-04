@@ -8,9 +8,6 @@ on:
 
 env:
   TARGET: x86_64-pc-windows-gnu
-  HOST: x86_64-pc-windows-gnu
-  RUST_BACKTRACE: 1
-  MSYS2_PATH: C:\msys64\usr\bin
 
 jobs:
   build:
@@ -25,40 +22,27 @@ jobs:
 
     - name: Install required tools
       run: |
-        choco install -y python3
-        python -m pip install --upgrade pip
-        pip install ninja
+        choco install -y python --version 3.10.0
+        choco install -y cmake
+        choco install -y ninja
+        choco install -y mingw --version 8.1.0
         Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
         refreshenv
 
-    - name: Set up MSYS2
+    - name: Set up environment
       run: |
-        choco install -y msys2 --params="/NoUpdate"
-        Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
-        refreshenv
-        $env:Path += ";$env:MSYS2_PATH"
-        bash -lc "pacman --noconfirm -Syu"
-        bash -lc "pacman --noconfirm -S mingw-w64-x86_64-toolchain make cmake"
+        echo "C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin" >> $env:GITHUB_PATH
 
-    - name: Configure
+    - name: Build Rust
       run: |
-        bash -lc "./configure \
-          --target=$env:TARGET \
-          --host=$env:HOST \
-          --enable-extended \
-          --tools=rust-analyzer"
-
-    - name: Build
-      run: |
-        set CXXFLAGS=-std=c++17
-        bash -lc "make -j$(nproc)"
-
-    - name: Package artifacts
-      run: |
-        bash -lc "make dist"
+        python .\x.py build --target=$env:TARGET --host=$env:TARGET
+        python .\x.py dist --target=$env:TARGET --host=$env:TARGET
 
     - name: Upload artifacts
+      if: success()
       uses: actions/upload-artifact@v4
       with:
         name: rustc-${{ env.TARGET }}
-        path: ${{ github.workspace }}/build/dist/*.tar.xz
+        path: |
+          build/dist/*.tar.gz
+          build/dist/*.tar.xz
