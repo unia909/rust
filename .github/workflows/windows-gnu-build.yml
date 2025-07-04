@@ -38,6 +38,7 @@ jobs:
 
     - name: Build Rust
       run: |
+        python .\x.py setup
         python .\x.py build --stage 2 --target=$env:TARGET --host=$env:TARGET
         python .\x.py dist --stage 2 --target=$env:TARGET --host=$env:TARGET
 
