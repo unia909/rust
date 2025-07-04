@@ -38,12 +38,17 @@ jobs:
 
     - name: Create bootstrap.toml
       run: |
-        cat > bootstrap.toml << 'EOF'
-        llvm.download-ci-llvm = false
-        profile = "release"
-        build.target = ["x86_64-pc-windows-gnu"]
-        build.host = ["x86_64-pc-windows-gnu"]
-        EOF
+        echo profile = "release" >> config.toml
+        echo. >> config.toml
+        echo [llvm] > config.toml
+        echo download-ci-llvm = false >> config.toml
+        echo. >> config.toml
+        echo [rust] >> config.toml
+        echo codegen-units = 1 >> config.toml
+        echo debug = false >> config.toml
+        echo. >> config.toml
+        echo [build] >> config.toml
+        echo extended = true >> config.toml
 
     - name: Build Rust
       run: |
