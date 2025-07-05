@@ -37,6 +37,7 @@ jobs:
         echo "C:\ProgramData\chocolatey\lib\mingw\tools\install\mingw64\bin" >> $env:GITHUB_PATH
 
     - name: Create bootstrap.toml
+      shell: cmd
       run: |
         echo profile = "release" >> config.toml
         echo. >> config.toml
