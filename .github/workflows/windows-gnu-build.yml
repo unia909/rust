@@ -28,7 +28,7 @@ jobs:
         choco install -y python --version 3.10.0
         choco install -y cmake
         choco install -y ninja
-        choco install -y mingw --version 8.1.0
+        choco install -y mingw --version 12.2.0
         Import-Module $env:ChocolateyInstall\helpers\chocolateyProfile.psm1
         refreshenv
 
